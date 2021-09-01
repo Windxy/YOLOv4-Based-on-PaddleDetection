@@ -23,17 +23,18 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)
 
-from ppdet.utils.logger import setup_logger
-logger = setup_logger('ppdet.anchor_cluster')
-
 from scipy.cluster.vq import kmeans
 import random
 import numpy as np
 from tqdm import tqdm
-
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.core.workspace import load_config, merge_config, create
+
+import logging
+FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
+logging.basicConfig(level=logging.INFO, format=FORMAT)
+logger = logging.getLogger(__name__)
 
 
 class BaseAnchorCluster(object):
@@ -67,8 +68,7 @@ class BaseAnchorCluster(object):
             return self.whs, self.shapes
         whs = np.zeros((0, 2))
         shapes = np.zeros((0, 2))
-        self.dataset.parse_dataset()
-        roidbs = self.dataset.roidbs
+        roidbs = self.dataset.get_roidb()
         for rec in tqdm(roidbs):
             h, w = rec['h'], rec['w']
             bbox = rec['gt_bbox']
@@ -173,7 +173,6 @@ class YOLOv2AnchorCluster(BaseAnchorCluster):
             converged, assignments = self.kmeans_expectation(whs, centers,
                                                              assignments)
             if converged:
-                logger.info('kmeans algorithm has converged')
                 break
             # M step
             centers = self.kmeans_maximizations(whs, centers, assignments)
@@ -332,7 +331,7 @@ def main():
     check_version()
 
     # get dataset
-    dataset = cfg['TrainDataset']
+    dataset = cfg['TrainReader']['dataset']
     if FLAGS.size:
         if ',' in FLAGS.size:
             size = list(map(int, FLAGS.size.split(',')))
@@ -340,8 +339,8 @@ def main():
         else:
             size = int(FLAGS.size)
             size = [size, size]
-    elif 'inputs_def' in cfg['TrainReader'] and 'image_shape' in cfg[
-            'TrainReader']['inputs_def']:
+
+    elif 'image_shape' in cfg['TrainReader']['inputs_def']:
         size = cfg['TrainReader']['inputs_def']['image_shape'][1:]
     else:
         raise ValueError('size is not specified')

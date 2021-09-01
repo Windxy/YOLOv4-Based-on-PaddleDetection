@@ -1,10 +1,7 @@
 tqdm
 typeguard ; python_version >= '3.4'
-visualdl>=2.1.0
+visualdl>=2.0.0b
 opencv-python
 PyYAML
 shapely
-scipy
-terminaltables
-pycocotools
-setuptools>=42.0.0
+scipy==1.6.1

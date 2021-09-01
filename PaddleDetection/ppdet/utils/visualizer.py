@@ -19,30 +19,33 @@ from __future__ import unicode_literals
 
 import numpy as np
 from PIL import Image, ImageDraw
+from scipy import ndimage
 import cv2
+
 from .colormap import colormap
-from ppdet.utils.logger import setup_logger
-logger = setup_logger(__name__)
 
 __all__ = ['visualize_results']
 
 
 def visualize_results(image,
-                      bbox_res,
-                      mask_res,
-                      segm_res,
                       im_id,
                       catid2name,
-                      threshold=0.5):
+                      threshold=0.5,
+                      bbox_results=None,
+                      mask_results=None,
+                      segm_results=None,
+                      lmk_results=None):
     """
     Visualize bbox and mask results
     """
-    if bbox_res is not None:
-        image = draw_bbox(image, im_id, catid2name, bbox_res, threshold)
-    if mask_res is not None:
-        image = draw_mask(image, im_id, mask_res, threshold)
-    if segm_res is not None:
-        image = draw_segm(image, im_id, catid2name, segm_res, threshold)
+    if mask_results:
+        image = draw_mask(image, im_id, mask_results, threshold)
+    if bbox_results:
+        image = draw_bbox(image, im_id, catid2name, bbox_results, threshold)
+    if lmk_results:
+        image = draw_lmk(image, im_id, lmk_results, threshold)
+    if segm_results:
+        image = draw_segm(image, im_id, catid2name, segm_results, threshold)
     return image
 
 
@@ -70,75 +73,6 @@ def draw_mask(image, im_id, segms, threshold, alpha=0.7):
         img_array[idx[0], idx[1], :] *= 1.0 - alpha
         img_array[idx[0], idx[1], :] += alpha * color_mask
     return Image.fromarray(img_array.astype('uint8'))
-
-
-def draw_bbox(image, im_id, catid2name, bboxes, threshold):
-    """
-    Draw bbox on image
-    """
-    draw = ImageDraw.Draw(image)
-
-    catid2color = {}
-    color_list = colormap(rgb=True)[:40]
-    for dt in np.array(bboxes):
-        if im_id != dt['image_id']:
-            continue
-        catid, bbox, score = dt['category_id'], dt['bbox'], dt['score']
-        if score < threshold:
-            continue
-
-        if catid not in catid2color:
-            idx = np.random.randint(len(color_list))
-            catid2color[catid] = color_list[idx]
-        color = tuple(catid2color[catid])
-
-        # draw bbox
-        if len(bbox) == 4:
-            # draw bbox
-            xmin, ymin, w, h = bbox
-            xmax = xmin + w
-            ymax = ymin + h
-            draw.line(
-                [(xmin, ymin), (xmin, ymax), (xmax, ymax), (xmax, ymin),
-                 (xmin, ymin)],
-                width=2,
-                fill=color)
-        elif len(bbox) == 8:
-            x1, y1, x2, y2, x3, y3, x4, y4 = bbox
-            draw.line(
-                [(x1, y1), (x2, y2), (x3, y3), (x4, y4), (x1, y1)],
-                width=2,
-                fill=color)
-            xmin = min(x1, x2, x3, x4)
-            ymin = min(y1, y2, y3, y4)
-        else:
-            logger.error('the shape of bbox must be [M, 4] or [M, 8]!')
-
-        # draw label
-        text = "{} {:.2f}".format(catid2name[catid], score)
-        tw, th = draw.textsize(text)
-        draw.rectangle(
-            [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill=color)
-        draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255))
-
-    return image
-
-
-def save_result(save_path, bbox_res, catid2name, threshold):
-    """
-    save result as txt
-    """
-    with open(save_path, 'w') as f:
-        for dt in bbox_res:
-            catid, bbox, score = dt['category_id'], dt['bbox'], dt['score']
-            if score < threshold:
-                continue
-            # each bbox result as a line
-            # for rbox: classname score x1 y1 x2 y2 x3 y3 x4 y4
-            # for bbox: classname score x1 y1 w h
-            bbox_pred = '{} {} '.format(catid2name[catid], score) + ' '.join(
-                [str(e) for e in bbox])
-            f.write(bbox_pred + '\n')
 
 
 def draw_segm(image,
@@ -200,3 +134,62 @@ def draw_segm(image,
                 lineType=cv2.LINE_AA)
 
     return Image.fromarray(img_array.astype('uint8'))
+
+
+def draw_bbox(image, im_id, catid2name, bboxes, threshold):
+    """
+    Draw bbox on image
+    """
+    draw = ImageDraw.Draw(image)
+
+    catid2color = {}
+    color_list = colormap(rgb=True)[:40]
+    for dt in np.array(bboxes):
+        if im_id != dt['image_id']:
+            continue
+        catid, bbox, score = dt['category_id'], dt['bbox'], dt['score']
+        if score < threshold:
+            continue
+
+        xmin, ymin, w, h = bbox
+        xmax = xmin + w
+        ymax = ymin + h
+
+        if catid not in catid2color:
+            idx = np.random.randint(len(color_list))
+            catid2color[catid] = color_list[idx]
+        color = tuple(catid2color[catid])
+
+        # draw bbox
+        draw.line(
+            [(xmin, ymin), (xmin, ymax), (xmax, ymax), (xmax, ymin),
+             (xmin, ymin)],
+            width=2,
+            fill=color)
+
+        # draw label
+        text = "{} {:.2f}".format(catid2name[catid], score)
+        tw, th = draw.textsize(text)
+        draw.rectangle(
+            [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill=color)
+        draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255))
+
+    return image
+
+
+def draw_lmk(image, im_id, lmk_results, threshold):
+    draw = ImageDraw.Draw(image)
+    catid2color = {}
+    color_list = colormap(rgb=True)[:40]
+    for dt in np.array(lmk_results):
+        lmk_decode, score = dt['landmark'], dt['score']
+        if im_id != dt['image_id']:
+            continue
+        if score < threshold:
+            continue
+        for j in range(5):
+            x1 = int(round(lmk_decode[2 * j]))
+            y1 = int(round(lmk_decode[2 * j + 1]))
+            draw.ellipse(
+                (x1, y1, x1 + 5, y1 + 5), fill='green', outline='green')
+    return image

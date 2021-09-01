@@ -36,16 +36,12 @@ DEFINE_string(image_path, "", "Path of input image");
 DEFINE_string(video_path, "", "Path of input video");
 DEFINE_bool(use_gpu, false, "Infering with GPU or CPU");
 DEFINE_bool(use_camera, false, "Use camera or not");
-DEFINE_string(run_mode, "fluid", "Mode of running(fluid/trt_fp32/trt_fp16/trt_int8)");
+DEFINE_string(run_mode, "fluid", "Mode of running(fluid/trt_fp32/trt_fp16)");
 DEFINE_int32(gpu_id, 0, "Device id of GPU to execute");
 DEFINE_int32(camera_id, -1, "Device id of camera to predict");
 DEFINE_bool(run_benchmark, false, "Whether to predict a image_file repeatedly for benchmark");
 DEFINE_double(threshold, 0.5, "Threshold of score.");
 DEFINE_string(output_dir, "output", "Directory of output visualization files.");
-DEFINE_bool(use_dynamic_shape, false, "Trt use dynamic shape or not");
-DEFINE_int32(trt_min_shape, 1, "Min shape of TRT DynamicShapeI");
-DEFINE_int32(trt_max_shape, 1280, "Max shape of TRT DynamicShapeI");
-DEFINE_int32(trt_opt_shape, 640, "Opt shape of TRT DynamicShapeI");
 
 static std::string DirName(const std::string &filepath) {
   auto pos = filepath.rfind(OS_PATH_SEP);
@@ -202,14 +198,14 @@ int main(int argc, char** argv) {
     return -1;
   }
   if (!(FLAGS_run_mode == "fluid" || FLAGS_run_mode == "trt_fp32"
-      || FLAGS_run_mode == "trt_fp16" || FLAGS_run_mode == "trt_int8")) {
-    std::cout << "run_mode should be 'fluid', 'trt_fp32', 'trt_fp16' or 'trt_int8'.";
+      || FLAGS_run_mode == "trt_fp16")) {
+    std::cout << "run_mode should be 'fluid', 'trt_fp32' or 'trt_fp16'.";
     return -1;
   }
+
   // Load model and create a object detector
-  PaddleDetection::ObjectDetector det(FLAGS_model_dir, FLAGS_use_gpu, FLAGS_run_mode,
-                        FLAGS_gpu_id, FLAGS_use_dynamic_shape, FLAGS_trt_min_shape,
-                        FLAGS_trt_max_shape, FLAGS_trt_opt_shape);
+  PaddleDetection::ObjectDetector det(FLAGS_model_dir, FLAGS_use_gpu,
+    FLAGS_run_mode, FLAGS_gpu_id);
   // Do inference on input video or image
   if (!FLAGS_video_path.empty() || FLAGS_use_camera) {
     PredictVideo(FLAGS_video_path, &det);

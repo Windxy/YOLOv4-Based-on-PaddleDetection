@@ -18,8 +18,6 @@ cat /etc/nv_tegra_release
 
 * (3) 下载`JetPack`，请参考[NVIDIA Jetson Linux Developer Guide](https://docs.nvidia.com/jetson/l4t/index.html) 中的`Preparing a Jetson Developer Kit for Use`章节内容进行刷写系统镜像。
 
-**注意**: 请在[jetpack-archive](https://developer.nvidia.com/embedded/jetpack-archive) 根据硬件选择适配的`JetPack`版本进行刷机。
-
 ## 下载或编译`Paddle`预测库
 本文档使用`Paddle`在`JetPack4.3`上预先编译好的预测库，请根据硬件在[安装与编译 Linux 预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/05_inference_deployment/inference/build_and_install_lib_cn.html) 中选择对应版本的`Paddle`预测库。
 
@@ -36,7 +34,7 @@ cat /etc/nv_tegra_release
 
 ### Step2: 下载PaddlePaddle C++ 预测库 fluid_inference
 
-解压下载的[nv_jetson_cuda10_cudnn7.6_trt6(jetpack4.3)](https://paddle-inference-lib.bj.bcebos.com/2.0.1-nv-jetson-jetpack4.3-all/paddle_inference.tgz) 。
+解压下载的[nv_jetson_cuda10_cudnn7.6_trt6(jetpack4.3)](https://paddle-inference-lib.bj.bcebos.com/2.0.0-nv-jetson-jetpack4.3-all/paddle_inference.tgz) 。
 
 下载并解压后`/root/projects/fluid_inference`目录包含内容为：
 ```
@@ -76,9 +74,6 @@ TENSORRT_LIB_DIR=/usr/lib/aarch64-linux-gnu
 # Paddle 预测库路径
 PADDLE_DIR=/path/to/fluid_inference/
 
-# Paddle 预测库名称
-PADDLE_LIB_NAME=paddle_inference
-
 # Paddle 的预测库是否使用静态库来编译
 # 使用TensorRT时，Paddle的预测库通常为动态库
 WITH_STATIC_LIB=OFF
@@ -106,8 +101,7 @@ cmake .. \
     -DWITH_STATIC_LIB=${WITH_STATIC_LIB} \
     -DCUDA_LIB=${CUDA_LIB} \
     -DCUDNN_LIB=${CUDNN_LIB} \
-    -DOPENCV_DIR=${OPENCV_DIR} \
-    -DPADDLE_LIB_NAME={PADDLE_LIB_NAME}
+    -DOPENCV_DIR=${OPENCV_DIR}
 make
 ```
 
@@ -130,9 +124,6 @@ TENSORRT_LIB_DIR=/usr/lib/aarch64-linux-gnu
 
 # Paddle 预测库路径
 PADDLE_DIR=/home/nvidia/PaddleDetection_infer/fluid_inference/
-
-# Paddle 预测库名称
-PADDLE_LIB_NAME=paddle_inference
 
 # Paddle 的预测库是否使用静态库来编译
 # 使用TensorRT时，Paddle的预测库通常为动态库
@@ -160,7 +151,7 @@ CUDNN_LIB=/usr/lib/aarch64-linux-gnu/
 | --camera_id | Option | 用来预测的摄像头ID，默认为-1（表示不使用摄像头预测）|
 | --use_gpu  | 是否使用 GPU 预测, 支持值为0或1(默认值为0)|
 | --gpu_id  |  指定进行推理的GPU device id(默认值为0)|
-| --run_mode | 使用GPU时，默认为fluid, 可选（fluid/trt_fp32/trt_fp16/trt_int8）|
+| --run_mode | 使用GPU时，默认为fluid, 可选（fluid/trt_fp32/trt_fp16）|
 | --run_benchmark | 是否重复预测来进行benchmark测速 ｜
 | --output_dir | 输出图片所在的文件夹, 默认为output ｜
 
@@ -185,4 +176,17 @@ CUDNN_LIB=/usr/lib/aarch64-linux-gnu/
 
 
 ## 性能测试
-benchmark请查看[BENCHMARK_INFER](../../BENCHMARK_INFER.md)
+测试环境为：硬件: TX2，JetPack版本: 4.3, Paddle预测库: 1.8.4，CUDA: 10.0, CUDNN: 7.5, TensorRT: 5.0.  
+
+去掉前100轮warmup时间，测试100轮的平均时间，单位ms/image，只计算模型运行时间，不包括数据的处理和拷贝。
+
+
+|模型 | 输入| AnalysisPredictor(ms) |
+|---|----|---|
+| yolov3_mobilenet_v1 |  608*608  | 56.243858
+| faster_rcnn_r50_1x  | 1333*1333  | 73.552460
+| faster_rcnn_r50_vd_fpn_2x | 1344*1344 | 87.582146
+| mask_rcnn_r50_fpn_1x | 1344*1344  | 107.317848
+| mask_rcnn_r50_vd_fpn_2x | 1344*1344  | 87.98.708122
+| ppyolo_r18vd | 320*320  |  22.876789
+| ppyolo_2x | 608*608  | 68.562050
