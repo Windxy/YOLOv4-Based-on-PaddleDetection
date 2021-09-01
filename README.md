@@ -7,11 +7,11 @@
 
 作为YOLO系列经典检测网络，YOLOv4继承了YOLOv3的优势，总结了单阶段网络可以分为主干backbone、颈部neck和头部head三个部分、同时引入了大量的训练技巧、新的检测方案和损失方案
 
-![](image\one-stage.png)
+![one-stage](image\one-stage.png)
 
 YOLOv4由主干网络CSPDarkNet53、颈部网络SPP和PANet、YOLOv3的头部网络组成，如下图所示
 
-![](image\YOLOv4.png)
+![YOLOv4](image\YOLOv4.png)
 
 本项目基于[AIStudio](https://aistudio.baidu.com/aistudio/index)和[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection)开源框架复现了YOLOv4。在[COCO2017](https://cocodataset.org/#home)数据集上进行训练，并在[COCO-test2017](https://competitions.codalab.org/competitions/20794#participate)数据集进行测试，最终测试结果达到mAP=41.7%
 
@@ -128,7 +128,9 @@ python PaddleDetection/tools/infer.py -c yolov4_cspdarknet_coco_test.yml -o use_
 
 ### 官网评测结果
 
-进入https://competitions.codalab.org/competitions/20794#participate，注册并submit打包后的zip文件（已打包好的zip文件链接：https://pan.baidu.com/s/1HE7Krq0B6_goIsm-nVf2lA 提取码：b9n9 ）
+进入官网https://competitions.codalab.org/competitions/20794#participate
+
+注册并submit打包后的zip文件（已打包好的zip文件链接：https://pan.baidu.com/s/1HE7Krq0B6_goIsm-nVf2lA 提取码：b9n9 ）
 
 测试后文件存在`coco_test2017_output`目录下
 
@@ -149,8 +151,8 @@ python PaddleDetection/tools/infer.py -c yolov4_cspdarknet_coco_test.yml -o use_
 
 ### 单张图片测试结果
 
-![](infer\000000252219.jpg)
+![测试图片](infer\000000252219.jpg)
 
 
 
-![](output\000000252219.jpg)
+![结果](output\000000252219.jpg)
